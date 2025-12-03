@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Buscar reportes por nombre (búsqueda en address)
+// Buscar reportes por nombre (búsqueda en address) 
 router.get('/search', async (req, res) => {
     try {
         const { name } = req.query;
