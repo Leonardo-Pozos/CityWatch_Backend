@@ -1,5 +1,5 @@
 const express = require("express");
-const router = express.Router();
+const router = express.Router(); // <--- CRÍTICO: Aquí se define 'router'
 const service = require('../services/reportsService');
 
 // Obtener todos los reportes
@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Buscar reportes por nombre (búsqueda en address) 
+// Buscar reportes por nombre (búsqueda en address)
 router.get('/search', async (req, res) => {
     try {
         const { name } = req.query;
@@ -31,18 +31,27 @@ router.get('/search', async (req, res) => {
 // Crear nuevo reporte
 router.post('/', async (req, res) => {
     try {
-        const { type, description, latitude, longitude, userId, address } = req.body;
-        const savedReport = await service.createReport(
+        // *** CORRECCIÓN CLAVE: Extraer 'user' del body y renombrarlo a 'userId' ***
+        // Esto captura el campo 'user' enviado por el cliente.
+        const { type, description, address, location, user: userId } = req.body; 
+
+        if (!userId) {
+            return res.status(400).json({ error: 'El ID de usuario es requerido para crear un reporte.' });
+        }
+        
+        // Se llama al servicio con un objeto que usa 'userId'
+        const savedReport = await service.createReport({
             type,
             description,
-            latitude,
-            longitude,
-            userId,
-            address
-        );
+            address,
+            location,
+            userId // <-- Se envía el ID renombrado
+        });
 
         res.status(201).json(savedReport);
     } catch (error) {
+        // Capturamos cualquier error de validación de Mongoose
+        console.error("Error en POST /reports:", error.message);
         res.status(400).json({ error: error.message });
     }
 });
@@ -51,10 +60,13 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, description, address, latitude, longitude } = req.body;
-
+        const { type, description, address, location } = req.body; 
+        
         const updatedReport = await service.updateReport(id, {
-            type, description, address, latitude, longitude
+            type, 
+            description, 
+            address, 
+            location
         });
 
         if (!updatedReport) {
